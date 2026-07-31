@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
   }
 
   private val viewModel: FirewallViewModel by viewModels {
-    FirewallViewModel.Factory(repository)
+    FirewallViewModel.Factory(repository, applicationContext)
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {

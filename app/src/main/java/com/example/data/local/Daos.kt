@@ -38,6 +38,9 @@ interface AppRuleDao {
     @Query("SELECT * FROM app_rules ORDER BY appName ASC")
     fun getAllAppRules(): Flow<List<AppRuleEntity>>
 
+    @Query("SELECT * FROM app_rules ORDER BY appName ASC")
+    suspend fun getAppRulesList(): List<AppRuleEntity>
+
     @Query("SELECT * FROM app_rules WHERE pkgName = :pkgName")
     suspend fun getAppRule(pkgName: String): AppRuleEntity?
 

@@ -28,7 +28,8 @@ data class FirewallUiState(
 )
 
 class FirewallViewModel(
-    private val repository: FirewallRepository
+    private val repository: FirewallRepository,
+    private val context: Context
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -109,6 +110,9 @@ class FirewallViewModel(
     fun updateAppAccess(pkgName: String, appName: String, wifi: AccessType, mobile: AccessType) {
         viewModelScope.launch {
             repository.updateAppRule(pkgName, appName, wifi, mobile)
+            if (isVpnActive.value) {
+                FirewallVpnService.reloadRules(context)
+            }
         }
     }
 
@@ -136,6 +140,9 @@ class FirewallViewModel(
                 isCustom = true
             )
             repository.saveRuleFilter(filter)
+            if (isVpnActive.value) {
+                FirewallVpnService.reloadRules(context)
+            }
             _snackbarMessage.value = "Custom rule saved for $appName"
         }
     }
@@ -143,6 +150,9 @@ class FirewallViewModel(
     fun deleteRuleFilter(filterId: Long) {
         viewModelScope.launch {
             repository.deleteRuleFilter(filterId)
+            if (isVpnActive.value) {
+                FirewallVpnService.reloadRules(context)
+            }
             _snackbarMessage.value = "Rule deleted"
         }
     }
@@ -151,6 +161,9 @@ class FirewallViewModel(
         viewModelScope.launch {
             val result = repository.importRulesFromJson(jsonString)
             result.onSuccess { count ->
+                if (isVpnActive.value) {
+                    FirewallVpnService.reloadRules(context)
+                }
                 _snackbarMessage.value = "Successfully imported $count rules!"
             }.onFailure {
                 _snackbarMessage.value = "Failed to parse JSON: ${it.localizedMessage}"
@@ -176,10 +189,13 @@ class FirewallViewModel(
         _snackbarMessage.value = null
     }
 
-    class Factory(private val repository: FirewallRepository) : ViewModelProvider.Factory {
+    class Factory(
+        private val repository: FirewallRepository,
+        private val context: Context
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return FirewallViewModel(repository) as T
+            return FirewallViewModel(repository, context.applicationContext) as T
         }
     }
 }
