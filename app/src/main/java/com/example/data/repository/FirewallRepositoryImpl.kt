@@ -107,26 +107,24 @@ class FirewallRepositoryImpl(
 
     override suspend fun loadDefaultRulesFromAssets(): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            if (ruleFilterDao.getCount() <= 5) {
-                ruleFilterDao.clearAll()
-                val jsonString = context.assets.open("default_rules.json").bufferedReader().use { it.readText() }
-                val parsed = JsonRuleParser.parseJsonString(jsonString)
+            ruleFilterDao.clearAll()
+            val jsonString = context.assets.open("default_rules.json").bufferedReader().use { it.readText() }
+            val parsed = JsonRuleParser.parseJsonString(jsonString)
 
-                for (filter in parsed.filters) {
-                    ruleFilterDao.insert(filter.toEntity().copy(id = 0))
-                }
-
-                val appEntities = parsed.apps.map {
-                    AppRuleEntity(
-                        pkgName = it.pkgName,
-                        appName = it.appName,
-                        wifi = it.wifi.name.lowercase(),
-                        mobile = it.mobile.name.lowercase(),
-                        isSystemApp = it.isSystemApp
-                    )
-                }
-                appRuleDao.insertAll(appEntities)
+            for (filter in parsed.filters) {
+                ruleFilterDao.insert(filter.toEntity().copy(id = 0))
             }
+
+            val appEntities = parsed.apps.map {
+                AppRuleEntity(
+                    pkgName = it.pkgName,
+                    appName = it.appName,
+                    wifi = it.wifi.name.lowercase(),
+                    mobile = it.mobile.name.lowercase(),
+                    isSystemApp = it.isSystemApp
+                )
+            }
+            appRuleDao.insertAll(appEntities)
         }
     }
 
@@ -134,6 +132,9 @@ class FirewallRepositoryImpl(
         runCatching {
             val parsed = JsonRuleParser.parseJsonString(jsonString)
 
+            // Clear old/default filters so imported rules overwrite/update the rules list completely
+            ruleFilterDao.clearAll()
+            
             var count = 0
             for (filter in parsed.filters) {
                 ruleFilterDao.insert(filter.toEntity().copy(id = 0))
