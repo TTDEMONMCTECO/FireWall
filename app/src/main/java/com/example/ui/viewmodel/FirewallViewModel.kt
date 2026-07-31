@@ -47,7 +47,9 @@ class FirewallViewModel(
             Triple(logs, blocked, allowed)
         },
         _searchQuery
-    ) { (active, appRules, filterRules), (logs, blocked, allowed), query ->
+    ) { flow1, flow2, query ->
+        val (active, appRules, filterRules) = flow1
+        val (logs, blocked, allowed) = flow2
 
         val filteredApps = if (query.isBlank()) {
             appRules
@@ -87,8 +89,16 @@ class FirewallViewModel(
 
     init {
         viewModelScope.launch {
-            repository.loadDefaultRulesFromAssets()
-            repository.scanInstalledApps()
+            try {
+                repository.loadDefaultRulesFromAssets()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            try {
+                repository.scanInstalledApps()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

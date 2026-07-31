@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
@@ -40,10 +41,14 @@ class FirewallVpnService : VpnService() {
             val intent = Intent(context, FirewallVpnService::class.java).apply {
                 action = ACTION_START
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
@@ -51,7 +56,11 @@ class FirewallVpnService : VpnService() {
             val intent = Intent(context, FirewallVpnService::class.java).apply {
                 action = ACTION_STOP
             }
-            context.startService(intent)
+            try {
+                context.startService(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -68,7 +77,24 @@ class FirewallVpnService : VpnService() {
         return START_STICKY
     }
 
+    private fun promoteToForeground() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    createNotification(),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, createNotification())
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private fun startVpn() {
+        promoteToForeground()
         if (_isRunning.value) return
 
         try {
@@ -82,7 +108,6 @@ class FirewallVpnService : VpnService() {
             vpnInterface = builder.establish()
             _isRunning.value = true
 
-            startForeground(NOTIFICATION_ID, createNotification())
             startTrafficMonitorSimulation()
 
         } catch (e: Exception) {

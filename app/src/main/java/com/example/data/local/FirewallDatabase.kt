@@ -25,7 +25,9 @@ abstract class FirewallDatabase : RoomDatabase() {
                     context.applicationContext,
                     FirewallDatabase::class.java,
                     "noroot_firewall_db"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

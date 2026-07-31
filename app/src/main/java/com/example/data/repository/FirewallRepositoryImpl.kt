@@ -232,30 +232,42 @@ class FirewallRepositoryImpl(
 
     override suspend fun scanInstalledApps() {
         withContext(Dispatchers.IO) {
-            val pm = context.packageManager
-            val installedPackages = pm.getInstalledPackages(PackageManager.GET_META_DATA)
+            try {
+                val pm = context.packageManager
+                val installedPackages = pm.getInstalledPackages(0)
 
-            val appEntities = installedPackages.mapNotNull { pkg ->
-                val pkgName = pkg.packageName
-                val appName = pkg.applicationInfo?.loadLabel(pm)?.toString() ?: pkgName
-                val isSystem = (pkg.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_SYSTEM != 0
+                val appEntities = installedPackages.mapNotNull { pkg ->
+                    val pkgName = pkg.packageName ?: return@mapNotNull null
+                    val appName = try {
+                        pkg.applicationInfo?.loadLabel(pm)?.toString() ?: pkgName
+                    } catch (e: Exception) {
+                        pkgName
+                    }
+                    val isSystem = try {
+                        (pkg.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_SYSTEM != 0
+                    } catch (e: Exception) {
+                        false
+                    }
 
-                val existing = appRuleDao.getAppRule(pkgName)
-                if (existing == null) {
-                    AppRuleEntity(
-                        pkgName = pkgName,
-                        appName = appName,
-                        wifi = "none",
-                        mobile = "none",
-                        isSystemApp = isSystem
-                    )
-                } else {
-                    null
+                    val existing = appRuleDao.getAppRule(pkgName)
+                    if (existing == null) {
+                        AppRuleEntity(
+                            pkgName = pkgName,
+                            appName = appName,
+                            wifi = "none",
+                            mobile = "none",
+                            isSystemApp = isSystem
+                        )
+                    } else {
+                        null
+                    }
                 }
-            }
 
-            if (appEntities.isNotEmpty()) {
-                appRuleDao.insertAll(appEntities)
+                if (appEntities.isNotEmpty()) {
+                    appRuleDao.insertAll(appEntities)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
