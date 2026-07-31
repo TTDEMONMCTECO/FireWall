@@ -13,8 +13,16 @@ import com.example.service.FirewallVpnService
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+private data class Quadruple<A, B, C, D>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D
+)
+
 data class FirewallUiState(
     val isVpnActive: Boolean = false,
+    val isDarkTheme: Boolean = true,
     val totalRules: Int = 0,
     val customRulesCount: Int = 0,
     val blockedCount: Long = 0,
@@ -32,6 +40,11 @@ class FirewallViewModel(
     private val context: Context
 ) : ViewModel() {
 
+    private val prefs = context.getSharedPreferences("firewall_prefs", Context.MODE_PRIVATE)
+
+    private val _isDarkTheme = MutableStateFlow(prefs.getBoolean("key_dark_theme", true))
+    val isDarkTheme = _isDarkTheme.asStateFlow()
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
@@ -41,15 +54,15 @@ class FirewallViewModel(
     val isVpnActive: StateFlow<Boolean> = FirewallVpnService.isRunning
 
     val uiState: StateFlow<FirewallUiState> = combine(
-        combine(isVpnActive, repository.getAllAppRules(), repository.getAllRuleFilters()) { active, appRules, filterRules ->
-            Triple(active, appRules, filterRules)
+        combine(isVpnActive, _isDarkTheme, repository.getAllAppRules(), repository.getAllRuleFilters()) { active, dark, appRules, filterRules ->
+            Quadruple(active, dark, appRules, filterRules)
         },
         combine(repository.getRecentLogs(), repository.getBlockedCount(), repository.getAllowedCount()) { logs, blocked, allowed ->
             Triple(logs, blocked, allowed)
         },
         _searchQuery
     ) { flow1, flow2, query ->
-        val (active, appRules, filterRules) = flow1
+        val (active, dark, appRules, filterRules) = flow1
         val (logs, blocked, allowed) = flow2
 
         val filteredApps = if (query.isBlank()) {
@@ -73,6 +86,7 @@ class FirewallViewModel(
 
         FirewallUiState(
             isVpnActive = active,
+            isDarkTheme = dark,
             totalRules = filterRules.size,
             customRulesCount = filterRules.count { it.isCustom },
             blockedCount = blocked,
@@ -183,6 +197,11 @@ class FirewallViewModel(
             repository.clearLogs()
             _snackbarMessage.value = "Network logs cleared"
         }
+    }
+
+    fun setDarkTheme(isDark: Boolean) {
+        _isDarkTheme.value = isDark
+        prefs.edit().putBoolean("key_dark_theme", isDark).apply()
     }
 
     fun clearSnackbar() {

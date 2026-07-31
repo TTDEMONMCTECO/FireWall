@@ -22,12 +22,14 @@ import com.example.ui.screens.*
 import com.example.ui.viewmodel.FirewallViewModel
 import kotlinx.coroutines.launch
 
+import androidx.compose.material.icons.filled.Settings
+
 enum class FirewallTab(val label: String, val icon: ImageVector) {
     HOME("Home", Icons.Default.Home),
     APPS("Apps", Icons.Default.Apps),
     FILTERS("Filters", Icons.Default.Tune),
     LOGS("Logs", Icons.Default.History),
-    CONFIG("JSON", Icons.Default.Code)
+    SETTINGS("Settings", Icons.Default.Settings)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -138,9 +140,10 @@ fun MainScreen(
                         onClearLogs = { viewModel.clearLogs() }
                     )
                 }
-                FirewallTab.CONFIG -> {
+                FirewallTab.SETTINGS -> {
                     SettingsImportExportTab(
                         uiState = uiState,
+                        onToggleDarkTheme = { viewModel.setDarkTheme(it) },
                         onImportJson = { json -> viewModel.importRulesFromJson(json) },
                         onExportJson = { callback -> viewModel.exportRulesToJson(callback) },
                         onResetDefaultRules = {

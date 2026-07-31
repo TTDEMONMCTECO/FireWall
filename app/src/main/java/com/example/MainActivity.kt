@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.FirewallDatabase
 import com.example.data.repository.FirewallRepositoryImpl
 import com.example.ui.MainScreen
@@ -35,7 +37,8 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
-      MyApplicationTheme {
+      val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+      MyApplicationTheme(darkTheme = uiState.isDarkTheme) {
         Surface(
           modifier = Modifier.fillMaxSize(),
           color = MaterialTheme.colorScheme.background
