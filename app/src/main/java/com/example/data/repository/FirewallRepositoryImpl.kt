@@ -107,12 +107,14 @@ class FirewallRepositoryImpl(
 
     override suspend fun loadDefaultRulesFromAssets(): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            if (ruleFilterDao.getCount() == 0) {
+            if (ruleFilterDao.getCount() <= 5) {
+                ruleFilterDao.clearAll()
                 val jsonString = context.assets.open("default_rules.json").bufferedReader().use { it.readText() }
                 val parsed = JsonRuleParser.parseJsonString(jsonString)
 
-                val filterEntities = parsed.filters.map { it.toEntity() }
-                ruleFilterDao.insertAll(filterEntities)
+                for (filter in parsed.filters) {
+                    ruleFilterDao.insert(filter.toEntity().copy(id = 0))
+                }
 
                 val appEntities = parsed.apps.map {
                     AppRuleEntity(
@@ -131,9 +133,12 @@ class FirewallRepositoryImpl(
     override suspend fun importRulesFromJson(jsonString: String): Result<Int> = withContext(Dispatchers.IO) {
         runCatching {
             val parsed = JsonRuleParser.parseJsonString(jsonString)
-            
-            val filterEntities = parsed.filters.map { it.toEntity() }
-            ruleFilterDao.insertAll(filterEntities)
+
+            var count = 0
+            for (filter in parsed.filters) {
+                ruleFilterDao.insert(filter.toEntity().copy(id = 0))
+                count++
+            }
 
             val appEntities = parsed.apps.map {
                 AppRuleEntity(
@@ -146,7 +151,7 @@ class FirewallRepositoryImpl(
             }
             appRuleDao.insertAll(appEntities)
 
-            parsed.filters.size
+            count
         }
     }
 

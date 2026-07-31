@@ -43,7 +43,7 @@ object JsonRuleParser {
             for (i in 0 until filtersArray.length()) {
                 val filterObj = filtersArray.getJSONObject(i)
                 val appName = filterObj.optString("appName", "App")
-                val isCustom = filterObj.optBoolean("isCustom", false)
+                val isCustom = filterObj.optBoolean("isCustom", true)
                 val mobileStr = filterObj.optString("mobile", "none")
                 val wifiStr = filterObj.optString("wifi", "none")
                 val pkg1Name = filterObj.optString("pkg1Name", "")

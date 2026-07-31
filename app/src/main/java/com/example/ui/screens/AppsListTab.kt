@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.graphics.drawable.Drawable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,14 +14,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.domain.model.AccessType
 import com.example.domain.model.AppRuleConfig
 import com.example.ui.components.AccessToggleChip
 import com.example.ui.viewmodel.FirewallUiState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun AppsListTab(
@@ -112,15 +117,13 @@ private fun AppRuleRowItem(
             ) {
                 Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
                     modifier = Modifier.size(40.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Android,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(24.dp)
+                        AppIconImage(
+                            pkgName = appRule.pkgName,
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
@@ -197,5 +200,37 @@ private fun AppRuleRowItem(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun AppIconImage(
+    pkgName: String,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val iconDrawable by produceState<Drawable?>(initialValue = null, key1 = pkgName) {
+        value = withContext(Dispatchers.IO) {
+            try {
+                context.packageManager.getApplicationIcon(pkgName)
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    if (iconDrawable != null) {
+        AsyncImage(
+            model = iconDrawable,
+            contentDescription = null,
+            modifier = modifier
+        )
+    } else {
+        Icon(
+            imageVector = Icons.Default.Android,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = modifier
+        )
     }
 }
